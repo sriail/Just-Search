@@ -138,8 +138,7 @@ function updatePageInfo(url) {
   try {
     const u = new URL(url);
     pageTitle.textContent = u.hostname;
-    pageFavicon.src =
-      u.origin + "/favicon.ico";
+    pageFavicon.src = new URL("/favicon.ico", u.origin).href;
     pageFavicon.style.display = "inline";
     pageFavicon.onerror = function () {
       this.style.display = "none";
