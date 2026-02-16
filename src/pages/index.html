@@ -1,1 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Just Search</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
+  <script src="/scram/scramjet.all.js"></script>
+  <script src="/baremux/index.js"></script>
+  <script src="/register-sw.js" defer></script>
+  <script src="/search.js" defer></script>
+  <script src="/app.js" defer></script>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- Top Navbar -->
+  <nav id="navbar">
+    <div class="nav-left">
+      <img id="page-favicon" src="" alt="" width="16" height="16" style="display:none;" />
+      <span id="page-title" class="nav-url-text"></span>
+    </div>
+    <div class="nav-center">
+      <button id="btn-back" class="nav-btn" title="Back"><i class="ti ti-arrow-left"></i></button>
+      <button id="btn-forward" class="nav-btn" title="Forward"><i class="ti ti-arrow-right"></i></button>
+      <button id="btn-reload" class="nav-btn" title="Reload"><i class="ti ti-refresh"></i></button>
+      <form id="navbar-form" autocomplete="off">
+        <input id="navbar-url" type="text" placeholder="Search or enter URL" />
+      </form>
+    </div>
+    <div class="nav-right">
+      <button id="btn-home" class="nav-btn" title="Home"><i class="ti ti-home"></i></button>
+      <button id="btn-settings" class="nav-btn" title="Settings"><i class="ti ti-settings"></i></button>
+    </div>
+  </nav>
 
+  <!-- Settings panel (loaded inline, hidden by default) -->
+  <div id="settings-panel" style="display:none;"></div>
+
+  <!-- Homepage content (shown when no proxy frame active) -->
+  <div id="home-content">
+    <div class="home-center">
+      <img src="/images/js.png" alt="Just Search" class="home-logo" />
+      <h1>Just Search</h1>
+      <form id="home-form" autocomplete="off">
+        <input id="home-search" type="text" placeholder="Search or enter URL" autofocus />
+      </form>
+    </div>
+  </div>
+
+  <!-- Proxy iframe container -->
+  <div id="frame-container"></div>
+</body>
+</html>

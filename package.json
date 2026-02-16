@@ -1,0 +1,23 @@
+{
+  "name": "just-search",
+  "version": "1.0.0",
+  "description": "A simple web proxy with Scramjet, Wisp, and libcurl transport",
+  "type": "module",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "keywords": ["proxy"],
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "fastify": "^5.7.2",
+    "@fastify/static": "^8.2.0",
+    "@mercuryworkshop/bare-mux": "^2.1.7",
+    "@mercuryworkshop/libcurl-transport": "^1.5.2",
+    "@mercuryworkshop/scramjet": "https://github.com/MercuryWorkshop/scramjet/releases/download/latest/mercuryworkshop-scramjet-2.0.0-alpha.tgz",
+    "@mercuryworkshop/wisp-js": "^0.4.1",
+    "ws": "^8.18.3"
+  }
+}
