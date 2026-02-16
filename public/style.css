@@ -7,23 +7,23 @@
   --text: #1a1a1a;
   --text-muted: #666;
   --border: #ddd;
-  --accent: #4a90d9;
+  --accent: #8a9bb2;
   --input-bg: #f0f0f0;
   --btn-hover: #e0e0e0;
   --settings-bg: #fafafa;
 }
 
 [data-theme="dark"] {
-  --bg: #1a1a2e;
-  --bg-nav: #16213e;
-  --bg-card: #1f2940;
+  --bg: #121212;
+  --bg-nav: #1e1e1e;
+  --bg-card: #252525;
   --text: #e0e0e0;
   --text-muted: #999;
-  --border: #2a2a4a;
-  --accent: #4a90d9;
-  --input-bg: #2a2a4a;
-  --btn-hover: #2a3a5a;
-  --settings-bg: #1f2940;
+  --border: #333;
+  --accent: #8a9bb2;
+  --input-bg: #2a2a2a;
+  --btn-hover: #383838;
+  --settings-bg: #252525;
 }
 
 /* --- Reset & Base --- */
@@ -171,7 +171,7 @@ body {
 
 #home-search:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.15);
+  box-shadow: 0 0 0 3px rgba(138, 155, 178, 0.2);
 }
 
 /* --- Frame Container --- */
