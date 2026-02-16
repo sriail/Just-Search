@@ -1,0 +1,254 @@
+"use strict";
+
+// --- Settings helpers ---
+function loadSettings() {
+  const defaults = {
+    searchEngine: "https://duckduckgo.com/?q=%s",
+    adblock: false,
+    theme: "system",
+  };
+  try {
+    const saved = JSON.parse(localStorage.getItem("just-search-settings"));
+    return Object.assign(defaults, saved);
+  } catch (e) {
+    return defaults;
+  }
+}
+
+function saveSettings(settings) {
+  localStorage.setItem("just-search-settings", JSON.stringify(settings));
+}
+
+function applyTheme(theme) {
+  let resolved = theme;
+  if (theme === "system") {
+    resolved = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  document.documentElement.setAttribute("data-theme", resolved);
+
+  // Apply theme to proxy iframe if it exists
+  const frame = document.getElementById("sj-frame");
+  if (frame) {
+    try {
+      frame.contentDocument.documentElement.setAttribute("data-theme", resolved);
+    } catch (e) {
+      // cross-origin, ignore
+    }
+  }
+}
+
+// --- Scramjet setup ---
+const { ScramjetController } = $scramjetLoadController();
+
+const scramjet = new ScramjetController({
+  files: {
+    wasm: "/scram/scramjet.wasm.wasm",
+    all: "/scram/scramjet.all.js",
+    sync: "/scram/scramjet.sync.js",
+  },
+});
+
+scramjet.init();
+
+const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+
+// --- State ---
+let settings = loadSettings();
+let settingsOpen = false;
+let currentFrame = null;
+
+// --- Apply theme on load ---
+applyTheme(settings.theme);
+
+// Listen for system theme changes
+window
+  .matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change", () => {
+    if (settings.theme === "system") applyTheme("system");
+  });
+
+// --- DOM refs ---
+const homeContent = document.getElementById("home-content");
+const frameContainer = document.getElementById("frame-container");
+const navbarUrl = document.getElementById("navbar-url");
+const navbarForm = document.getElementById("navbar-form");
+const homeForm = document.getElementById("home-form");
+const homeSearch = document.getElementById("home-search");
+const pageFavicon = document.getElementById("page-favicon");
+const pageTitle = document.getElementById("page-title");
+const settingsPanel = document.getElementById("settings-panel");
+
+const btnBack = document.getElementById("btn-back");
+const btnForward = document.getElementById("btn-forward");
+const btnReload = document.getElementById("btn-reload");
+const btnHome = document.getElementById("btn-home");
+const btnSettings = document.getElementById("btn-settings");
+
+// --- Navigate to URL ---
+async function navigateToUrl(input) {
+  try {
+    await registerSW();
+  } catch (err) {
+    console.error("Failed to register service worker:", err);
+    return;
+  }
+
+  const url = search(input, settings.searchEngine);
+
+  const wispUrl =
+    (location.protocol === "https:" ? "wss" : "ws") +
+    "://" +
+    location.host +
+    "/wisp/";
+
+  if ((await connection.getTransport()) !== "/libcurl/index.mjs") {
+    await connection.setTransport("/libcurl/index.mjs", [
+      { websocket: wispUrl },
+    ]);
+  }
+
+  // Remove old frame if exists
+  if (currentFrame) {
+    currentFrame.frame.remove();
+    currentFrame = null;
+  }
+
+  currentFrame = scramjet.createFrame();
+  currentFrame.frame.id = "sj-frame";
+  frameContainer.appendChild(currentFrame.frame);
+
+  // Show frame, hide home
+  homeContent.style.display = "none";
+  frameContainer.style.display = "block";
+
+  // Close settings if open
+  settingsPanel.style.display = "none";
+  settingsOpen = false;
+
+  currentFrame.go(url);
+
+  // Update navbar
+  navbarUrl.value = url;
+  updatePageInfo(url);
+}
+
+function updatePageInfo(url) {
+  try {
+    const u = new URL(url);
+    pageTitle.textContent = u.hostname;
+    pageFavicon.src = new URL("/favicon.ico", u.origin).href;
+    pageFavicon.style.display = "inline";
+    pageFavicon.onerror = function () {
+      this.style.display = "none";
+    };
+  } catch (e) {
+    pageTitle.textContent = url;
+    pageFavicon.style.display = "none";
+  }
+}
+
+// --- Event handlers ---
+
+// Home form submit
+homeForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const val = homeSearch.value.trim();
+  if (val) navigateToUrl(val);
+});
+
+// Navbar form submit (search while proxied)
+navbarForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const val = navbarUrl.value.trim();
+  if (val) navigateToUrl(val);
+});
+
+// Back
+btnBack.addEventListener("click", () => {
+  if (currentFrame) {
+    try {
+      currentFrame.frame.contentWindow.history.back();
+    } catch (e) {
+      // ignore cross-origin
+    }
+  }
+});
+
+// Forward
+btnForward.addEventListener("click", () => {
+  if (currentFrame) {
+    try {
+      currentFrame.frame.contentWindow.history.forward();
+    } catch (e) {
+      // ignore cross-origin
+    }
+  }
+});
+
+// Reload
+btnReload.addEventListener("click", () => {
+  if (currentFrame) {
+    try {
+      currentFrame.frame.contentWindow.location.reload();
+    } catch (e) {
+      // ignore cross-origin
+    }
+  }
+});
+
+// Home
+btnHome.addEventListener("click", () => {
+  if (currentFrame) {
+    currentFrame.frame.remove();
+    currentFrame = null;
+  }
+  frameContainer.style.display = "none";
+  settingsPanel.style.display = "none";
+  settingsOpen = false;
+  homeContent.style.display = "flex";
+  navbarUrl.value = "";
+  pageTitle.textContent = "";
+  pageFavicon.style.display = "none";
+});
+
+// Settings
+btnSettings.addEventListener("click", async () => {
+  settingsOpen = !settingsOpen;
+  if (settingsOpen) {
+    // Load settings panel HTML
+    const res = await fetch("/settings.html");
+    const html = await res.text();
+    settingsPanel.innerHTML = html;
+    settingsPanel.style.display = "block";
+
+    // Populate current settings
+    const engineSelect = document.getElementById("search-engine-select");
+    const adblockToggle = document.getElementById("adblock-toggle");
+    const adblockLabel = document.getElementById("adblock-label");
+    const themeSelect = document.getElementById("theme-select");
+    const saveBtn = document.getElementById("settings-save");
+
+    engineSelect.value = settings.searchEngine;
+    adblockToggle.checked = settings.adblock;
+    adblockLabel.textContent = settings.adblock ? "On" : "Off";
+    themeSelect.value = settings.theme;
+
+    adblockToggle.addEventListener("change", () => {
+      adblockLabel.textContent = adblockToggle.checked ? "On" : "Off";
+    });
+
+    saveBtn.addEventListener("click", () => {
+      settings.searchEngine = engineSelect.value;
+      settings.adblock = adblockToggle.checked;
+      settings.theme = themeSelect.value;
+      saveSettings(settings);
+      applyTheme(settings.theme);
+      settingsPanel.style.display = "none";
+      settingsOpen = false;
+    });
+  } else {
+    settingsPanel.style.display = "none";
+  }
+});

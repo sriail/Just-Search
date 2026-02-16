@@ -1,1 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Just Search</title>
+  <script src="/scram/scramjet.all.js"></script>
+  <script src="/baremux/index.js"></script>
+  <script src="/register-sw.js" defer></script>
+  <script src="/search.js" defer></script>
+  <script src="/app.js" defer></script>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- Top Navbar -->
+  <nav id="navbar">
+    <div class="nav-left">
+      <img id="page-favicon" src="" alt="Page favicon" width="16" height="16" style="display:none;" />
+      <span id="page-title" class="nav-url-text"></span>
+    </div>
+    <div class="nav-center">
+      <button id="btn-back" class="nav-btn" title="Back"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0"/><path d="M5 12l6 6"/><path d="M5 12l6 -6"/></svg></button>
+      <button id="btn-forward" class="nav-btn" title="Forward"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l14 0"/><path d="M19 12l-6 6"/><path d="M19 12l-6 -6"/></svg></button>
+      <button id="btn-reload" class="nav-btn" title="Reload"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg></button>
+      <form id="navbar-form" autocomplete="off">
+        <input id="navbar-url" type="text" placeholder="Search or enter URL" />
+      </form>
+    </div>
+    <div class="nav-right">
+      <button id="btn-home" class="nav-btn" title="Home"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg></button>
+      <button id="btn-settings" class="nav-btn" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.066 2.573c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.573 1.066c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.066 -2.573c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg></button>
+    </div>
+  </nav>
 
+  <!-- Settings panel (loaded inline, hidden by default) -->
+  <div id="settings-panel" style="display:none;"></div>
+
+  <!-- Homepage content (shown when no proxy frame active) -->
+  <div id="home-content">
+    <div class="home-center">
+      <img src="/images/js.png" alt="Just Search" class="home-logo" />
+      <h1>Just Search</h1>
+      <form id="home-form" autocomplete="off">
+        <input id="home-search" type="text" placeholder="Search or enter URL" autofocus />
+      </form>
+    </div>
+  </div>
+
+  <!-- Proxy iframe container -->
+  <div id="frame-container"></div>
+</body>
+</html>
