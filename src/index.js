@@ -14,6 +14,10 @@ const publicPath = fileURLToPath(new URL("../public/", import.meta.url));
 const pagesPath = fileURLToPath(new URL("pages/", import.meta.url));
 const imagesPath = fileURLToPath(new URL("images/", import.meta.url));
 
+// Read page templates once at startup
+const indexHtml = readFileSync(pagesPath + "index.html");
+const settingsHtml = readFileSync(pagesPath + "settings.html");
+
 // Wisp Configuration
 logging.set_level(logging.INFO);
 Object.assign(wisp.options, {
@@ -71,12 +75,12 @@ fastify.register(fastifyStatic, {
 
 // Serve index.html from src/pages/
 fastify.get("/", (req, reply) => {
-  return reply.type("text/html").send(readFileSync(pagesPath + "index.html"));
+  return reply.type("text/html").send(indexHtml);
 });
 
 // Serve settings.html partial
 fastify.get("/settings.html", (req, reply) => {
-  return reply.type("text/html").send(readFileSync(pagesPath + "settings.html"));
+  return reply.type("text/html").send(settingsHtml);
 });
 
 fastify.setNotFoundHandler((req, reply) => {
