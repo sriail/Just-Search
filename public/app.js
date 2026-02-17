@@ -58,6 +58,7 @@ const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 let settings = loadSettings();
 let settingsOpen = false;
 let currentFrame = null;
+let urlMonitorInterval = null;
 
 // --- Apply theme on load ---
 applyTheme(settings.theme);
@@ -76,8 +77,6 @@ const navbarUrl = document.getElementById("navbar-url");
 const navbarForm = document.getElementById("navbar-form");
 const homeForm = document.getElementById("home-form");
 const homeSearch = document.getElementById("home-search");
-const pageFavicon = document.getElementById("page-favicon");
-const pageTitle = document.getElementById("page-title");
 const settingsPanel = document.getElementById("settings-panel");
 
 const btnBack = document.getElementById("btn-back");
@@ -85,6 +84,7 @@ const btnForward = document.getElementById("btn-forward");
 const btnReload = document.getElementById("btn-reload");
 const btnHome = document.getElementById("btn-home");
 const btnSettings = document.getElementById("btn-settings");
+const btnFullscreen = document.getElementById("btn-fullscreen");
 
 // --- Navigate to URL ---
 async function navigateToUrl(input) {
@@ -115,6 +115,12 @@ async function navigateToUrl(input) {
     currentFrame = null;
   }
 
+  // Clear any existing URL monitor interval
+  if (urlMonitorInterval) {
+    clearInterval(urlMonitorInterval);
+    urlMonitorInterval = null;
+  }
+
   currentFrame = scramjet.createFrame();
   currentFrame.frame.id = "sj-frame";
   frameContainer.appendChild(currentFrame.frame);
@@ -131,23 +137,60 @@ async function navigateToUrl(input) {
 
   // Update navbar
   navbarUrl.value = url;
-  updatePageInfo(url);
+
+  // Monitor iframe for URL changes
+  monitorIframeNavigation();
 }
 
-function updatePageInfo(url) {
+function monitorIframeNavigation() {
+  if (!currentFrame) return;
+
+  // Poll the iframe location to update the navbar URL
+  urlMonitorInterval = setInterval(() => {
+    if (!currentFrame || !currentFrame.frame) {
+      clearInterval(urlMonitorInterval);
+      urlMonitorInterval = null;
+      return;
+    }
+
+    try {
+      const iframeUrl = currentFrame.frame.contentWindow.location.href;
+      if (iframeUrl && !iframeUrl.startsWith("about:")) {
+        // Decode scramjet proxied URL to show clean URL
+        const decodedUrl = decodeScramjetUrl(iframeUrl);
+        if (decodedUrl && decodedUrl !== navbarUrl.value) {
+          navbarUrl.value = decodedUrl;
+        }
+      }
+    } catch (e) {
+      // Cross-origin access blocked, this is expected
+    }
+  }, 500);
+}
+
+function decodeScramjetUrl(url) {
   try {
-    const u = new URL(url);
-    pageTitle.textContent = u.hostname;
-    pageFavicon.src = new URL("/favicon.ico", u.origin).href;
-    pageFavicon.style.display = "inline";
-    pageFavicon.onerror = function () {
-      this.style.display = "none";
-    };
+    // Check if URL contains the scramjet prefix
+    const scramjetPrefix = "/scramjet/";
+    const urlObj = new URL(url);
+    
+    if (urlObj.pathname.startsWith(scramjetPrefix)) {
+      // Extract the encoded URL after the prefix
+      const encodedUrl = urlObj.pathname.substring(scramjetPrefix.length);
+      // Decode the URL
+      return decodeURIComponent(encodedUrl);
+    }
+    
+    // If not a scramjet URL, return as-is
+    return url;
   } catch (e) {
-    pageTitle.textContent = url;
-    pageFavicon.style.display = "none";
+    // If decoding fails, return original URL
+    return url;
   }
 }
+
+// Note: Scramjet proxy handles window.open and link interception internally
+// via its client-side hooks, so manual interception is not needed
 
 // --- Event handlers ---
 
@@ -204,13 +247,15 @@ btnHome.addEventListener("click", () => {
     currentFrame.frame.remove();
     currentFrame = null;
   }
+  if (urlMonitorInterval) {
+    clearInterval(urlMonitorInterval);
+    urlMonitorInterval = null;
+  }
   frameContainer.style.display = "none";
   settingsPanel.style.display = "none";
   settingsOpen = false;
   homeContent.style.display = "flex";
   navbarUrl.value = "";
-  pageTitle.textContent = "";
-  pageFavicon.style.display = "none";
 });
 
 // Settings
@@ -252,3 +297,46 @@ btnSettings.addEventListener("click", async () => {
     settingsPanel.style.display = "none";
   }
 });
+
+// Fullscreen
+const navbar = document.getElementById("navbar");
+
+btnFullscreen.addEventListener("click", () => {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    // Enter fullscreen
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    }
+  } else {
+    // Exit fullscreen
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
+});
+
+// Listen for fullscreen changes
+function handleFullscreenChange() {
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    // Entered fullscreen
+    navbar.style.display = "none";
+    frameContainer.style.height = "100vh";
+  } else {
+    // Exited fullscreen
+    navbar.style.display = "flex";
+    frameContainer.style.height = "calc(100vh - 48px)";
+  }
+}
+
+document.addEventListener("fullscreenchange", handleFullscreenChange);
+document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+
