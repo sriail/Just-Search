@@ -48,14 +48,6 @@ const scramjet = new ScramjetController({
     all: "/scram/scramjet.all.js",
     sync: "/scram/scramjet.sync.js",
   },
-  codec: {
-    encode: true,
-    decode: true,
-  },
-  flags: {
-    serviceworkers: true,
-    naiiveRewriter: false,
-  },
 });
 
 scramjet.init();
