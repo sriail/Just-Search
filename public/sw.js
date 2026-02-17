@@ -14,8 +14,11 @@ async function handleRequest(event) {
   } catch (err) {
     // Log error but don't crash the service worker
     console.error("Service worker fetch error:", err);
-    // Return a basic error response
-    return new Response("Service worker error", { status: 500 });
+    // Return a user-friendly error response
+    return new Response("Failed to fetch resource. Please check your connection and try again.", { 
+      status: 500,
+      statusText: "Service Worker Error"
+    });
   }
 }
 
