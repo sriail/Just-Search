@@ -56,23 +56,6 @@ body {
   position: relative;
 }
 
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  max-width: 180px;
-  overflow: hidden;
-}
-
-.nav-url-text {
-  font-size: 13px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .nav-center {
   display: flex;
   align-items: center;

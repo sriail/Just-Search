@@ -48,6 +48,14 @@ const scramjet = new ScramjetController({
     all: "/scram/scramjet.all.js",
     sync: "/scram/scramjet.sync.js",
   },
+  codec: {
+    encode: true,
+    decode: true,
+  },
+  flags: {
+    serviceworkers: true,
+    naiiveRewriter: false,
+  },
 });
 
 scramjet.init();
@@ -76,8 +84,6 @@ const navbarUrl = document.getElementById("navbar-url");
 const navbarForm = document.getElementById("navbar-form");
 const homeForm = document.getElementById("home-form");
 const homeSearch = document.getElementById("home-search");
-const pageFavicon = document.getElementById("page-favicon");
-const pageTitle = document.getElementById("page-title");
 const settingsPanel = document.getElementById("settings-panel");
 
 const btnBack = document.getElementById("btn-back");
@@ -85,6 +91,7 @@ const btnForward = document.getElementById("btn-forward");
 const btnReload = document.getElementById("btn-reload");
 const btnHome = document.getElementById("btn-home");
 const btnSettings = document.getElementById("btn-settings");
+const btnFullscreen = document.getElementById("btn-fullscreen");
 
 // --- Navigate to URL ---
 async function navigateToUrl(input) {
@@ -131,21 +138,72 @@ async function navigateToUrl(input) {
 
   // Update navbar
   navbarUrl.value = url;
-  updatePageInfo(url);
+
+  // Monitor iframe for URL changes and intercept new window opens
+  monitorIframeNavigation();
+  interceptNewWindowOpens();
 }
 
-function updatePageInfo(url) {
+function monitorIframeNavigation() {
+  if (!currentFrame) return;
+
+  // Poll the iframe location to update the navbar URL
+  const checkInterval = setInterval(() => {
+    if (!currentFrame || !currentFrame.frame) {
+      clearInterval(checkInterval);
+      return;
+    }
+
+    try {
+      const iframeUrl = currentFrame.frame.contentWindow.location.href;
+      if (iframeUrl && iframeUrl !== navbarUrl.value && !iframeUrl.startsWith("about:")) {
+        navbarUrl.value = iframeUrl;
+      }
+    } catch (e) {
+      // Cross-origin access blocked, this is expected
+    }
+  }, 500);
+}
+
+function interceptNewWindowOpens() {
+  if (!currentFrame) return;
+
   try {
-    const u = new URL(url);
-    pageTitle.textContent = u.hostname;
-    pageFavicon.src = new URL("/favicon.ico", u.origin).href;
-    pageFavicon.style.display = "inline";
-    pageFavicon.onerror = function () {
-      this.style.display = "none";
+    const iframeWindow = currentFrame.frame.contentWindow;
+    
+    // Override window.open to redirect to the iframe
+    const originalOpen = iframeWindow.open;
+    iframeWindow.open = function(url, target, features) {
+      if (url) {
+        // Navigate the current iframe instead of opening a new window
+        navigateToUrl(url);
+        return null;
+      }
+      return originalOpen.call(this, url, target, features);
     };
+
+    // Listen for clicks on links with target="_blank"
+    currentFrame.frame.addEventListener('load', function() {
+      try {
+        const iframeDoc = currentFrame.frame.contentDocument || currentFrame.frame.contentWindow.document;
+        
+        iframeDoc.addEventListener('click', function(e) {
+          const target = e.target.closest('a');
+          if (target && (target.target === '_blank' || target.target === '_new')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const href = target.href;
+            if (href) {
+              navigateToUrl(href);
+            }
+          }
+        }, true);
+      } catch (err) {
+        // Cross-origin, can't access iframe document
+      }
+    });
   } catch (e) {
-    pageTitle.textContent = url;
-    pageFavicon.style.display = "none";
+    // Cross-origin or other error
   }
 }
 
@@ -209,8 +267,6 @@ btnHome.addEventListener("click", () => {
   settingsOpen = false;
   homeContent.style.display = "flex";
   navbarUrl.value = "";
-  pageTitle.textContent = "";
-  pageFavicon.style.display = "none";
 });
 
 // Settings
@@ -252,3 +308,54 @@ btnSettings.addEventListener("click", async () => {
     settingsPanel.style.display = "none";
   }
 });
+
+// Fullscreen
+let isFullscreen = false;
+const navbar = document.getElementById("navbar");
+
+btnFullscreen.addEventListener("click", () => {
+  if (!isFullscreen) {
+    // Enter fullscreen
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    }
+    navbar.style.display = "none";
+    frameContainer.style.height = "100vh";
+    isFullscreen = true;
+  } else {
+    // Exit fullscreen
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+    navbar.style.display = "flex";
+    frameContainer.style.height = "calc(100vh - 48px)";
+    isFullscreen = false;
+  }
+});
+
+// Listen for fullscreen changes (e.g., pressing ESC)
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) {
+    navbar.style.display = "flex";
+    frameContainer.style.height = "calc(100vh - 48px)";
+    isFullscreen = false;
+  }
+});
+
+document.addEventListener("webkitfullscreenchange", () => {
+  if (!document.webkitFullscreenElement) {
+    navbar.style.display = "flex";
+    frameContainer.style.height = "calc(100vh - 48px)";
+    isFullscreen = false;
+  }
+});
+
