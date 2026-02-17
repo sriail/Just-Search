@@ -155,13 +155,38 @@ function monitorIframeNavigation() {
 
     try {
       const iframeUrl = currentFrame.frame.contentWindow.location.href;
-      if (iframeUrl && iframeUrl !== navbarUrl.value && !iframeUrl.startsWith("about:")) {
-        navbarUrl.value = iframeUrl;
+      if (iframeUrl && !iframeUrl.startsWith("about:")) {
+        // Decode scramjet proxied URL to show clean URL
+        const decodedUrl = decodeScramjetUrl(iframeUrl);
+        if (decodedUrl && decodedUrl !== navbarUrl.value) {
+          navbarUrl.value = decodedUrl;
+        }
       }
     } catch (e) {
       // Cross-origin access blocked, this is expected
     }
   }, 500);
+}
+
+function decodeScramjetUrl(url) {
+  try {
+    // Check if URL contains the scramjet prefix
+    const scramjetPrefix = "/scramjet/";
+    const urlObj = new URL(url);
+    
+    if (urlObj.pathname.startsWith(scramjetPrefix)) {
+      // Extract the encoded URL after the prefix
+      const encodedUrl = urlObj.pathname.substring(scramjetPrefix.length);
+      // Decode the URL
+      return decodeURIComponent(encodedUrl);
+    }
+    
+    // If not a scramjet URL, return as-is
+    return url;
+  } catch (e) {
+    // If decoding fails, return original URL
+    return url;
+  }
 }
 
 // Note: Scramjet proxy handles window.open and link interception internally
