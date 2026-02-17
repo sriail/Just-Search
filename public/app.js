@@ -59,6 +59,8 @@ let settings = loadSettings();
 let settingsOpen = false;
 let currentFrame = null;
 let urlMonitorInterval = null;
+let navbarUrlFocused = false;
+let lastNavbarUrlValue = "";
 
 // --- Apply theme on load ---
 applyTheme(settings.theme);
@@ -85,6 +87,21 @@ const btnReload = document.getElementById("btn-reload");
 const btnHome = document.getElementById("btn-home");
 const btnSettings = document.getElementById("btn-settings");
 const btnFullscreen = document.getElementById("btn-fullscreen");
+
+// Track navbar URL input focus state
+navbarUrl.addEventListener("focus", () => {
+  navbarUrlFocused = true;
+  lastNavbarUrlValue = navbarUrl.value;
+});
+
+navbarUrl.addEventListener("blur", () => {
+  navbarUrlFocused = false;
+});
+
+navbarUrl.addEventListener("input", () => {
+  // User is actively typing
+  lastNavbarUrlValue = navbarUrl.value;
+});
 
 // --- Navigate to URL ---
 async function navigateToUrl(input) {
@@ -153,6 +170,11 @@ function monitorIframeNavigation() {
       return;
     }
 
+    // Don't update if user is typing or has focus on the navbar URL
+    if (navbarUrlFocused) {
+      return;
+    }
+
     try {
       const iframeUrl = currentFrame.frame.contentWindow.location.href;
       if (iframeUrl && !iframeUrl.startsWith("about:")) {
@@ -160,6 +182,7 @@ function monitorIframeNavigation() {
         const decodedUrl = decodeScramjetUrl(iframeUrl);
         if (decodedUrl && decodedUrl !== navbarUrl.value) {
           navbarUrl.value = decodedUrl;
+          lastNavbarUrlValue = decodedUrl;
         }
       }
     } catch (e) {

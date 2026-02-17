@@ -8,6 +8,16 @@ self.__scramjet$config = {
     websocket: true,
   },
   defaultFlags: {
-    "open window": true,
+    "open window": false,
+  },
+  // Custom error handler to prevent crashes from invalid JSON
+  errorHandler: (err) => {
+    // Silently handle JSON parse errors from websocket messages
+    if (err && err.message && err.message.includes("is not valid JSON")) {
+      console.warn("Scramjet: Skipping invalid JSON in websocket message");
+      return;
+    }
+    // Log other errors for debugging
+    console.error("Scramjet error:", err);
   },
 };
