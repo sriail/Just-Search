@@ -58,6 +58,7 @@ const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 let settings = loadSettings();
 let settingsOpen = false;
 let currentFrame = null;
+let urlMonitorInterval = null;
 
 // --- Apply theme on load ---
 applyTheme(settings.theme);
@@ -114,6 +115,12 @@ async function navigateToUrl(input) {
     currentFrame = null;
   }
 
+  // Clear any existing URL monitor interval
+  if (urlMonitorInterval) {
+    clearInterval(urlMonitorInterval);
+    urlMonitorInterval = null;
+  }
+
   currentFrame = scramjet.createFrame();
   currentFrame.frame.id = "sj-frame";
   frameContainer.appendChild(currentFrame.frame);
@@ -131,18 +138,18 @@ async function navigateToUrl(input) {
   // Update navbar
   navbarUrl.value = url;
 
-  // Monitor iframe for URL changes and intercept new window opens
+  // Monitor iframe for URL changes
   monitorIframeNavigation();
-  interceptNewWindowOpens();
 }
 
 function monitorIframeNavigation() {
   if (!currentFrame) return;
 
   // Poll the iframe location to update the navbar URL
-  const checkInterval = setInterval(() => {
+  urlMonitorInterval = setInterval(() => {
     if (!currentFrame || !currentFrame.frame) {
-      clearInterval(checkInterval);
+      clearInterval(urlMonitorInterval);
+      urlMonitorInterval = null;
       return;
     }
 
@@ -157,47 +164,8 @@ function monitorIframeNavigation() {
   }, 500);
 }
 
-function interceptNewWindowOpens() {
-  if (!currentFrame) return;
-
-  try {
-    const iframeWindow = currentFrame.frame.contentWindow;
-    
-    // Override window.open to redirect to the iframe
-    const originalOpen = iframeWindow.open;
-    iframeWindow.open = function(url, target, features) {
-      if (url) {
-        // Navigate the current iframe instead of opening a new window
-        navigateToUrl(url);
-        return null;
-      }
-      return originalOpen.call(this, url, target, features);
-    };
-
-    // Listen for clicks on links with target="_blank"
-    currentFrame.frame.addEventListener('load', function() {
-      try {
-        const iframeDoc = currentFrame.frame.contentDocument || currentFrame.frame.contentWindow.document;
-        
-        iframeDoc.addEventListener('click', function(e) {
-          const target = e.target.closest('a');
-          if (target && (target.target === '_blank' || target.target === '_new')) {
-            e.preventDefault();
-            e.stopPropagation();
-            const href = target.href;
-            if (href) {
-              navigateToUrl(href);
-            }
-          }
-        }, true);
-      } catch (err) {
-        // Cross-origin, can't access iframe document
-      }
-    });
-  } catch (e) {
-    // Cross-origin or other error
-  }
-}
+// Note: Scramjet proxy handles window.open and link interception internally
+// via its client-side hooks, so manual interception is not needed
 
 // --- Event handlers ---
 
@@ -254,6 +222,10 @@ btnHome.addEventListener("click", () => {
     currentFrame.frame.remove();
     currentFrame = null;
   }
+  if (urlMonitorInterval) {
+    clearInterval(urlMonitorInterval);
+    urlMonitorInterval = null;
+  }
   frameContainer.style.display = "none";
   settingsPanel.style.display = "none";
   settingsOpen = false;
@@ -302,11 +274,10 @@ btnSettings.addEventListener("click", async () => {
 });
 
 // Fullscreen
-let isFullscreen = false;
 const navbar = document.getElementById("navbar");
 
 btnFullscreen.addEventListener("click", () => {
-  if (!isFullscreen) {
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
     // Enter fullscreen
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
@@ -316,9 +287,6 @@ btnFullscreen.addEventListener("click", () => {
     } else if (elem.msRequestFullscreen) {
       elem.msRequestFullscreen();
     }
-    navbar.style.display = "none";
-    frameContainer.style.height = "100vh";
-    isFullscreen = true;
   } else {
     // Exit fullscreen
     if (document.exitFullscreen) {
@@ -328,26 +296,22 @@ btnFullscreen.addEventListener("click", () => {
     } else if (document.msExitFullscreen) {
       document.msExitFullscreen();
     }
-    navbar.style.display = "flex";
-    frameContainer.style.height = "calc(100vh - 48px)";
-    isFullscreen = false;
   }
 });
 
-// Listen for fullscreen changes (e.g., pressing ESC)
-document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement) {
+// Listen for fullscreen changes
+function handleFullscreenChange() {
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    // Entered fullscreen
+    navbar.style.display = "none";
+    frameContainer.style.height = "100vh";
+  } else {
+    // Exited fullscreen
     navbar.style.display = "flex";
     frameContainer.style.height = "calc(100vh - 48px)";
-    isFullscreen = false;
   }
-});
+}
 
-document.addEventListener("webkitfullscreenchange", () => {
-  if (!document.webkitFullscreenElement) {
-    navbar.style.display = "flex";
-    frameContainer.style.height = "calc(100vh - 48px)";
-    isFullscreen = false;
-  }
-});
+document.addEventListener("fullscreenchange", handleFullscreenChange);
+document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
 

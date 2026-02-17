@@ -3,5 +3,10 @@ self.__scramjet$config = {
   codec: "plain",
   flags: {
     serviceworkers: true,
+    captureErrors: true,
+    syncxhr: true,
+  },
+  defaultFlags: {
+    "open window": true,
   },
 };
