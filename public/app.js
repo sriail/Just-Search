@@ -60,7 +60,6 @@ let settingsOpen = false;
 let currentFrame = null;
 let urlMonitorInterval = null;
 let navbarUrlFocused = false;
-let lastNavbarUrlValue = "";
 
 // --- Apply theme on load ---
 applyTheme(settings.theme);
@@ -91,16 +90,10 @@ const btnFullscreen = document.getElementById("btn-fullscreen");
 // Track navbar URL input focus state
 navbarUrl.addEventListener("focus", () => {
   navbarUrlFocused = true;
-  lastNavbarUrlValue = navbarUrl.value;
 });
 
 navbarUrl.addEventListener("blur", () => {
   navbarUrlFocused = false;
-});
-
-navbarUrl.addEventListener("input", () => {
-  // User is actively typing
-  lastNavbarUrlValue = navbarUrl.value;
 });
 
 // --- Navigate to URL ---
@@ -182,7 +175,6 @@ function monitorIframeNavigation() {
         const decodedUrl = decodeScramjetUrl(iframeUrl);
         if (decodedUrl && decodedUrl !== navbarUrl.value) {
           navbarUrl.value = decodedUrl;
-          lastNavbarUrlValue = decodedUrl;
         }
       }
     } catch (e) {
