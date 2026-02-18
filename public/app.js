@@ -163,8 +163,14 @@ function monitorIframeNavigation() {
       return;
     }
 
+    // Don't update if in fullscreen mode (performance optimization)
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      return;
+    }
+
     // Don't update if user is typing or has focus on the navbar URL
-    if (navbarUrlFocused) {
+    // Check both the flag and document.activeElement for reliability
+    if (navbarUrlFocused || document.activeElement === navbarUrl) {
       return;
     }
 

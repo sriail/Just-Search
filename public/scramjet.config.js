@@ -22,6 +22,7 @@ self.__scramjet$config = {
         "Unexpected token",
         "Unexpected end of JSON",
         "JSON.parse",
+        "[object Object]",  // Object toString() being parsed as JSON
         "ima://",  // Protocol-prefixed data that shouldn't be parsed as JSON
         "data://",
         "blob://"
@@ -36,6 +37,13 @@ self.__scramjet$config = {
         return;
       }
     }
+    
+    // Handle OperationError (e.g., SharedStorage, API restrictions)
+    if (err.name === "OperationError" || err instanceof DOMException) {
+      console.warn("Scramjet: Skipping operation error:", err.message ? err.message.substring(0, 100) : err.name);
+      return;
+    }
+    
     // Log other errors for debugging
     console.error("Scramjet error:", err);
   },
