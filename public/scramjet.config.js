@@ -38,8 +38,8 @@ self.__scramjet$config = {
       }
     }
     
-    // Handle OperationError (e.g., SharedStorage, API restrictions)
-    if (err.name === "OperationError" || err instanceof DOMException) {
+    // Handle OperationError and other DOMException errors (e.g., SharedStorage, API restrictions)
+    if (err instanceof DOMException) {
       console.warn("Scramjet: Skipping operation error:", err.message ? err.message.substring(0, 100) : err.name);
       return;
     }

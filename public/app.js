@@ -164,7 +164,8 @@ function monitorIframeNavigation() {
     }
 
     // Don't update if in fullscreen mode (performance optimization)
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if (document.fullscreenElement || document.webkitFullscreenElement || 
+        document.mozFullScreenElement || document.msFullscreenElement) {
       return;
     }
 
