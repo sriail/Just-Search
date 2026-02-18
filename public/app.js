@@ -59,6 +59,7 @@ let settings = loadSettings();
 let settingsOpen = false;
 let currentFrame = null;
 let urlMonitorInterval = null;
+let navbarUrlFocused = false;
 
 // --- Apply theme on load ---
 applyTheme(settings.theme);
@@ -85,6 +86,15 @@ const btnReload = document.getElementById("btn-reload");
 const btnHome = document.getElementById("btn-home");
 const btnSettings = document.getElementById("btn-settings");
 const btnFullscreen = document.getElementById("btn-fullscreen");
+
+// Track navbar URL input focus state
+navbarUrl.addEventListener("focus", () => {
+  navbarUrlFocused = true;
+});
+
+navbarUrl.addEventListener("blur", () => {
+  navbarUrlFocused = false;
+});
 
 // --- Navigate to URL ---
 async function navigateToUrl(input) {
@@ -150,6 +160,18 @@ function monitorIframeNavigation() {
     if (!currentFrame || !currentFrame.frame) {
       clearInterval(urlMonitorInterval);
       urlMonitorInterval = null;
+      return;
+    }
+
+    // Don't update if in fullscreen mode (performance optimization)
+    if (document.fullscreenElement || document.webkitFullscreenElement || 
+        document.mozFullScreenElement || document.msFullscreenElement) {
+      return;
+    }
+
+    // Don't update if user is typing or has focus on the navbar URL
+    // Check both the flag and document.activeElement for reliability
+    if (navbarUrlFocused || document.activeElement === navbarUrl) {
       return;
     }
 
