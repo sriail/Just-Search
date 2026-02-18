@@ -6,16 +6,35 @@ self.__scramjet$config = {
     captureErrors: true,
     syncxhr: true,
     websocket: true,
+    cleanErrors: true,  // Clean up error messages for better handling
+    allowFailedIntercepts: true,  // Allow failed intercepts to continue
   },
   defaultFlags: {
     "open window": false,
   },
   // Custom error handler to prevent crashes from invalid JSON
   errorHandler: (err) => {
-    // Silently handle JSON parse errors from websocket messages
-    if (err instanceof SyntaxError && err.message && err.message.includes("is not valid JSON")) {
-      console.warn("Scramjet: Skipping invalid JSON in websocket message");
-      return;
+    // Handle all JSON parse errors from websocket messages and other sources
+    if (err instanceof SyntaxError) {
+      // Check for various JSON parse error patterns
+      const jsonErrorPatterns = [
+        "is not valid JSON",
+        "Unexpected token",
+        "Unexpected end of JSON",
+        "JSON.parse",
+        "ima://",  // Protocol-prefixed data that shouldn't be parsed as JSON
+        "data://",
+        "blob://"
+      ];
+      
+      const isJsonError = jsonErrorPatterns.some(pattern => 
+        err.message && err.message.includes(pattern)
+      );
+      
+      if (isJsonError) {
+        console.warn("Scramjet: Skipping invalid JSON/non-JSON data:", err.message.substring(0, 100));
+        return;
+      }
     }
     // Log other errors for debugging
     console.error("Scramjet error:", err);

@@ -12,9 +12,16 @@ async function handleRequest(event) {
     }
     return await fetch(event.request);
   } catch (err) {
-    // Log error but don't crash the service worker
+    // Special handling for JSON parse errors that shouldn't crash the worker
+    if (err instanceof SyntaxError && err.message) {
+      console.warn("Service worker: Skipping invalid data format:", err.message.substring(0, 100));
+      // Return empty response for non-critical parse errors
+      return new Response("", { status: 204 });
+    }
+    
+    // Log other errors but don't crash the service worker
     console.error("Service worker fetch error:", err);
-    // Return a user-friendly error response
+    // Return a user-friendly error response for real errors
     return new Response("Failed to fetch resource. Please check your connection and try again.", { 
       status: 500,
       statusText: "Service Worker Error"
