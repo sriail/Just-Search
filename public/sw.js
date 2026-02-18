@@ -15,8 +15,9 @@ async function handleRequest(event) {
     // Special handling for JSON parse errors that shouldn't crash the worker
     if (err instanceof SyntaxError && err.message) {
       console.warn("Service worker: Skipping invalid data format:", err.message.substring(0, 100));
-      // Return empty response for non-critical parse errors
-      return new Response("", { status: 204 });
+      // Return a pass-through response for non-critical parse errors
+      // This allows the request to fail gracefully without crashing the worker
+      return new Response(null, { status: 400, statusText: "Bad Request" });
     }
     
     // Log other errors but don't crash the service worker
